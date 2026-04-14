@@ -7,13 +7,25 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from datetime import timedelta
 # Create your views here.
 class TransactionListCreateView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request, profile_id):
-        transactions = Transaction.objects.filter(profile_id=profile_id)
-        if transactions.exists() and transactions.first().profile.user != request.user:
-            return Response(status=status.HTTP_403_FORBIDDEN)
+        transactions = Transaction.objects.filter(profile_id=profile_id,profile__user=request.user)
+        transactions_type = request.query_params.get('type')
+        if transactions_type:
+            transactions = transactions.filter(type=transactions_type)
+        transactions_month = request.query_params.get('month')
+        if transactions_month:
+            transactions = transactions.filter(created_at__month=transactions_month)
+        transactions_year = request.query_params.get('year')
+        if transactions_year:
+            transactions = transactions.filter(created_at__year=transactions_year)
+        transactions_range = request.query_params.get('range')
+        if transactions_range:
+            transactions = transactions.filter(created_at__range=transactions_range)
         serializer = TransactionSerializer(transactions, many=True)
         return Response(serializer.data)
     def post(self, request, profile_id):
@@ -25,6 +37,24 @@ class TransactionListCreateView(APIView):
             serializer.save(profile=profile)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class MonthlyTransactionListView(generics.ListAPIView):
+    serializer_class = TransactionSerializer
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        profile_id = self.kwargs['profile_id']
+        user = self.request.user
+        queryset = Transaction.objects.filter(profile_id=profile_id,profile__user=user)
+        now = timezone.now()
+        return queryset.filter(created_at__month=now.month,created_at__year=now.year)
+class LastTenDaysTransactionListView(generics.ListAPIView):
+    serializer_class = TransactionSerializer
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        profile_id = self.kwargs['profile_id']
+        user = self.request.user
+        queryset = Transaction.objects.filter(profile_id=profile_id,profile__user=user)
+        now = timezone.now()
+        return queryset.filter(created_at__range=(now - timedelta(days=10), now))
 class CategoryListCreateView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer

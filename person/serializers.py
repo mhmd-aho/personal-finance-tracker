@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Transaction, Category, Profile
 from django.contrib.auth.models import User
+from django.db import transaction
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -22,7 +23,9 @@ class TransactionSerializer(serializers.ModelSerializer):
     profile_id = serializers.PrimaryKeyRelatedField(queryset=Profile.objects.all(), write_only=True,source='profile')
     class Meta:
         model = Transaction
+        read_only_fields = ['created_at']
         fields = ['amount', 'type', 'created_at', 'category', 'category_id', 'profile', 'profile_id']
+
     def validate(self, attrs):
         profile = attrs['profile']
         amount = attrs['amount']

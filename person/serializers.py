@@ -24,7 +24,7 @@ class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
         read_only_fields = ['created_at']
-        fields = ['amount', 'type', 'created_at', 'category', 'category_id', 'profile', 'profile_id']
+        fields = ['id','amount', 'type', 'created_at', 'category', 'category_id', 'profile', 'profile_id']
 
     def validate(self, attrs):
         profile = attrs['profile']

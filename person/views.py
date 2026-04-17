@@ -37,6 +37,12 @@ class TransactionListCreateView(APIView):
             serializer.save(profile=profile)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def delete(self, request, profile_id):
+        transaction = Transaction.objects.get(id=profile_id)
+        if transaction.profile.user != request.user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        transaction.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 class MonthlyTransactionListView(generics.ListAPIView):
     serializer_class = TransactionSerializer
     permission_classes = [IsAuthenticated]
@@ -45,6 +51,9 @@ class MonthlyTransactionListView(generics.ListAPIView):
         user = self.request.user
         queryset = Transaction.objects.filter(profile_id=profile_id,profile__user=user)
         now = timezone.now()
+        transactions_type = self.request.query_params.get('type')
+        if transactions_type:
+            queryset = queryset.filter(type=transactions_type)
         return queryset.filter(created_at__month=now.month,created_at__year=now.year)
 class LastTenDaysTransactionListView(generics.ListAPIView):
     serializer_class = TransactionSerializer

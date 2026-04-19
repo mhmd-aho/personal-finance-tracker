@@ -1,33 +1,15 @@
 from django.shortcuts import render
-from rest_framework import generics
+from rest_framework import generics, status, permissions
 from rest_framework.views import APIView
-from .models import Transaction, Category, Profile
-from .serializers import TransactionSerializer, CategorySerializer, ProfileSerializer
-from rest_framework.permissions import IsAuthenticated
+from .models import Transaction, Category, Profile, Budget
+from .serializers import TransactionSerializer, CategorySerializer, ProfileSerializer, BudgetSerializer
 from rest_framework.response import Response
-from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from datetime import timedelta
 # Create your views here.
 class TransactionListCreateView(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request, profile_id):
-        transactions = Transaction.objects.filter(profile_id=profile_id,profile__user=request.user)
-        transactions_type = request.query_params.get('type')
-        if transactions_type:
-            transactions = transactions.filter(type=transactions_type)
-        transactions_month = request.query_params.get('month')
-        if transactions_month:
-            transactions = transactions.filter(created_at__month=transactions_month)
-        transactions_year = request.query_params.get('year')
-        if transactions_year:
-            transactions = transactions.filter(created_at__year=transactions_year)
-        transactions_range = request.query_params.get('range')
-        if transactions_range:
-            transactions = transactions.filter(created_at__range=transactions_range)
-        serializer = TransactionSerializer(transactions, many=True)
-        return Response(serializer.data)
+    permission_classes = [permissions.IsAuthenticated]
     def post(self, request, profile_id):
         profile = get_object_or_404(Profile, id=profile_id)
         if profile.user != request.user:
@@ -45,19 +27,16 @@ class TransactionListCreateView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 class MonthlyTransactionListView(generics.ListAPIView):
     serializer_class = TransactionSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
     def get_queryset(self):
         profile_id = self.kwargs['profile_id']
         user = self.request.user
         queryset = Transaction.objects.filter(profile_id=profile_id,profile__user=user)
         now = timezone.now()
-        transactions_type = self.request.query_params.get('type')
-        if transactions_type:
-            queryset = queryset.filter(type=transactions_type)
         return queryset.filter(created_at__month=now.month,created_at__year=now.year)
 class LastTenDaysTransactionListView(generics.ListAPIView):
     serializer_class = TransactionSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
     def get_queryset(self):
         profile_id = self.kwargs['profile_id']
         user = self.request.user
@@ -67,11 +46,11 @@ class LastTenDaysTransactionListView(generics.ListAPIView):
 class CategoryListCreateView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 class ProfileListCreateView(generics.ListAPIView):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 class ProfileRetrieveUpdateDestroyView(APIView):
     def get(self, request, profile_username):
         profile = get_object_or_404(Profile, user__username = profile_username)
@@ -85,3 +64,22 @@ class ProfileRetrieveUpdateDestroyView(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
         profile.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+class BudgetListCreateView(generics.ListCreateAPIView):
+    serializer_class = BudgetSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Optimized with select_related to avoid N+1 queries
+        return Budget.objects.filter(
+            profile_id=self.kwargs['profile_id'],
+            profile__user=self.request.user
+        ).select_related('category', 'profile')
+
+    def perform_create(self, serializer):
+        profile = get_object_or_404(Profile, id=self.kwargs['profile_id'], user=self.request.user)
+        serializer.save(profile=profile)
+class BudgetRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = BudgetSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        return Budget.objects.filter(profile__user=self.request.user)

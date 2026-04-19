@@ -1,7 +1,6 @@
 from rest_framework import serializers
-from .models import Transaction, Category, Profile
+from .models import Transaction, Category, Profile, Budget
 from django.contrib.auth.models import User
-from django.db import transaction
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -32,18 +31,44 @@ class TransactionSerializer(serializers.ModelSerializer):
         category = attrs['category']
         type = attrs['type']
         if amount <= 0:
-            raise serializers.ValidationError("Amount must be greater than 0")
+            raise serializers.ValidationError({"amount": "Amount must be greater than 0"})
         if type == 'expense' and amount > profile.balance:
-            raise serializers.ValidationError("Insufficient balance")
+            raise serializers.ValidationError({"amount": "Insufficient balance"})
         return attrs
+class BudgetSerializer(serializers.ModelSerializer):
+    category = CategorySerializer(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), 
+        write_only=True, 
+        source='category'
+    )
+    profile = ProfileSerializer(read_only=True)
+
+    class Meta:
+        model = Budget
+        fields = ['id', 'amount', 'category', 'category_id', 'profile']
+
+    def validate_amount(self, value):
+        if value <= 0:
+            raise serializers.ValidationError({"amount": "Amount must be greater than 0"})
+        return value
+
     def create(self, validated_data):
-        with transaction.atomic():
-            profile = validated_data['profile']
-            amount = validated_data['amount']
-            type = validated_data['type']
-            if type == 'expense':
-                profile.balance -= amount
-            else:
-                profile.balance += amount
-            profile.save()
-        return super().create(validated_data)
+        profile = validated_data['profile']
+        category = validated_data['category']
+        amount = validated_data['amount']
+        budget, created = Budget.objects.get_or_create(
+            profile=profile, 
+            category=category,
+            defaults={'amount': amount}
+        )
+
+        if not created:
+            budget.amount += amount
+            budget.save()
+        
+        return budget
+    def update(self, instance, validated_data):
+        instance.amount = validated_data.get('amount', instance.amount)
+        instance.save()
+        return instance

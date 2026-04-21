@@ -18,7 +18,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
 class BudgetViewSet(viewsets.ModelViewSet):
     serializer_class = BudgetSerializer
     permission_classes = [permissions.IsAuthenticated,IsProfileOwnerForObject]
-    lookup_field = 'profile__user__username'
+    lookup_field = 'pk'
     def get_queryset(self):
         return Budget.objects.filter(profile__user=self.request.user).select_related('category','profile')
     def perform_create(self, serializer):

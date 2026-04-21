@@ -1,12 +1,23 @@
-from django.urls import path
-from .views import TransactionListCreateView, CategoryListCreateView, ProfileListCreateView, ProfileRetrieveUpdateDestroyView, MonthlyTransactionListView, LastTenDaysTransactionListView, BudgetListCreateView, BudgetRetrieveUpdateDestroyView
+from django.urls import path,include
+from rest_framework import routers
+from .views import (
+    TransactionListCreateView,
+    TransactionRetrieveUpdateDestroyView,
+    CategoryViewSet,
+    ProfileViewSet,
+    BudgetViewSet,
+    MonthlyTransactionListView,
+    LastTenDaysTransactionListView,
+)
+router = routers.DefaultRouter()
+router.register(r'categories', CategoryViewSet, basename='category')
+router.register(r'profiles', ProfileViewSet, basename='profile')
+router.register(r'budgets', BudgetViewSet, basename='budget')
+
 urlpatterns = [
-    path('transactions/<str:profile_id>/', TransactionListCreateView.as_view()),
-    path('transactions/<str:profile_id>/monthly/', MonthlyTransactionListView.as_view()),
-    path('transactions/<str:profile_id>/last-ten-days/', LastTenDaysTransactionListView.as_view()),
-    path('categories/', CategoryListCreateView.as_view()),
-    path('profiles/', ProfileListCreateView.as_view()),
-    path('profiles/<str:profile_username>/', ProfileRetrieveUpdateDestroyView.as_view()),
-    path('budgets/<str:profile_id>/', BudgetListCreateView.as_view()),
-    path('budgets/<int:pk>/', BudgetRetrieveUpdateDestroyView.as_view()),    
+    path('',include(router.urls)),
+    path('transactions/profile/<str:profile_id>/', TransactionListCreateView.as_view(), name='transaction-list-create'),
+    path('transactions/<int:pk>',TransactionRetrieveUpdateDestroyView.as_view(), name='transaction-detail'),
+    path('transactions/profile/<int:profile_id>/monthly/', MonthlyTransactionListView.as_view(), name='transaction-monthly'),
+    path('transactions/profile/<int:profile_id>/last-ten-days/', LastTenDaysTransactionListView.as_view(), name='transaction-ten-days'),
 ]

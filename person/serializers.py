@@ -10,11 +10,13 @@ class ProfileSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(write_only=True)
     class Meta:
         model = Profile
-        fields = ['id', 'balance', 'user', 'user_id']
+        fields = ['id', 'balance', 'user', 'user_id', 'birth_date', 'gender', 'profile_picture']
 class CategorySerializer(serializers.ModelSerializer):
+    profile = ProfileSerializer(read_only=True)
+    profile_id = serializers.PrimaryKeyRelatedField(queryset=Profile.objects.all(), write_only=True,source='profile')
     class Meta:
         model = Category
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'profile', 'profile_id']
 class TransactionSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), write_only=True,source='category')

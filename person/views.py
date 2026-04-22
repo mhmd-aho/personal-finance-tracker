@@ -15,6 +15,8 @@ class ProfileViewSet(viewsets.ModelViewSet):
     lookup_field = 'user__username'
     def get_queryset(self):
         return Profile.objects.filter(user=self.request.user)
+    def perform_update(self, serializer):
+        serializer.save()
 class BudgetViewSet(viewsets.ModelViewSet):
     serializer_class = BudgetSerializer
     permission_classes = [permissions.IsAuthenticated,IsProfileOwnerForObject]

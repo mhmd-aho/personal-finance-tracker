@@ -8,7 +8,7 @@ django = "*"
 djangorestframework = "*"
 djoser = "*"
 django-cors-headers = "*"
-pillow = "*"
+imagekitio = "*"
 
 [dev-packages]
 

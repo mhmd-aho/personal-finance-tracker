@@ -3,7 +3,6 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.db.models import F
-from PIL import Image
 # Create your models here.
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
@@ -15,17 +14,6 @@ def save_user_profile(sender, instance, **kwargs):
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    birth_date = models.DateField(null=True, blank=True)
-    gender = models.CharField(max_length=10, choices=[('male', 'Male'), ('female', 'Female')], null=True, blank=True)
-    profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
-    def save(self,*args,**kwargs):
-        super().save(*args,**kwargs)
-        if self.profile_picture:
-            img = Image.open(self.profile_picture.path)
-            if img.height > 300 or img.width > 300:
-                output_size = (300, 300)
-                img.thumbnail(output_size)
-                img.save(self.profile_picture.path)
 @receiver(post_delete,sender= Profile)
 def delete_user_profile(sender,instance,**kwargs):
     if instance.user:

@@ -4,11 +4,16 @@ from .serializers import TransactionSerializer, CategorySerializer, ProfileSeria
 from django.utils import timezone
 from datetime import timedelta
 from .permissions import IsOwnerProfile, IsProfileOwnerForObject
+from django.db.models import Q
 # Create your views here.
 class CategoryViewSet(viewsets.ModelViewSet):
-    queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [permissions.IsAuthenticated]
+    def get_queryset(self):
+        return Category.objects.filter(Q(profile__user=self.request.user)| Q(profile = None))
+    def perform_create(self, serializer):
+        profile = Profile.objects.get(user=self.request.user)
+        serializer.save(profile=profile)
 class ProfileViewSet(viewsets.ModelViewSet):
     serializer_class = ProfileSerializer
     permission_classes = [permissions.IsAuthenticated,IsOwnerProfile]

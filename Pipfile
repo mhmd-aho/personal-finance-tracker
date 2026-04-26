@@ -13,6 +13,7 @@ python-decouple = "*"
 dj-database-url = "*"
 whitenoise = "*"
 gunicorn = "*"
+mysqlclient = "*"
 
 [dev-packages]
 

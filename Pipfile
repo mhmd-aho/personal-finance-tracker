@@ -9,6 +9,8 @@ djangorestframework = "*"
 djoser = "*"
 django-cors-headers = "*"
 imagekitio = "*"
+dj-database-url = "*"
+whitenoise = "*"
 
 [dev-packages]
 

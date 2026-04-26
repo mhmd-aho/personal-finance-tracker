@@ -60,7 +60,7 @@ MIDDLEWARE = [
 ]
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    'https://pft-frontend-gamma.vercel.app'  
+    'https://finflow-mhmd-a-gamma.vercel.app'  
 ]
 ROOT_URLCONF = 'api.urls'
 

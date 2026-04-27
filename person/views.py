@@ -10,7 +10,13 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     permission_classes = [permissions.IsAuthenticated]
     def get_queryset(self):
-        return Category.objects.filter(Q(profile__user__username=self.request.user.username) | Q(profile__isnull=True)).distinct()
+        user = self.request.user
+        if not user.is_authenticated:
+            return Category.objects.filter(profile__isnull=True)
+        profile = Profile.objects.get(user=user)
+        if not profile:
+            return Category.objects.filter(profile__isnull=True)
+        return Category.objects.filter(Q(profile=profile) | Q(profile__isnull=True)).distinct()
     def perform_create(self, serializer):
         profile = Profile.objects.get(user=self.request.user)
         serializer.save(profile=profile)

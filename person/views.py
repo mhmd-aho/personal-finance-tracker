@@ -43,9 +43,9 @@ class TransactionListCreateView(generics.ListCreateAPIView):
 class TransactionRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TransactionSerializer
     permission_classes = [permissions.IsAuthenticated, IsProfileOwnerForObject]
-    
+    lookup_field='id'
     def get_queryset(self):
-        return Transaction.objects.filter(profile__user=self.request.user)
+        return Transaction.objects.filter(profile__user=self.request.user).select_related('profile')
 class MonthlyTransactionListView(generics.ListAPIView):
     serializer_class = TransactionSerializer
     permission_classes = [permissions.IsAuthenticated]
